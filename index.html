@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TTS Demo — Vietnamese Text-to-Speech</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;600&family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,700;1,9..144,400&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg:        #f5f2ec;
+      --surface:   #ffffff;
+      --surface-2: #f0ede7;
+      --border:    #ddd9d0;
+      --border-hi: #b5b0a5;
+      --accent:    #0a7c59;
+      --accent-dim:#0d9c70;
+      --accent-bg: #e6f5f0;
+      --indigo:    #4f46e5;
+      --indigo-bg: #f0f0ff;
+      --text:      #1a1814;
+      --text-muted:#8c8680;
+      --text-dim:  #5c5955;
+      --error:     #c0392b;
+      --error-bg:  #fdf0ee;
+      --warn:      #c07a00;
+      --radius:    8px;
+      --mono:      'JetBrains Mono', monospace;
+      --serif:     'Fraunces', Georgia, serif;
+      --shadow-sm: 0 1px 3px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.05);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.05);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 14px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    body::before {
+      content: '';
+      position: fixed; inset: 0;
+      pointer-events: none; z-index: 0; opacity: 0.025;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='1'/%3E%3C/svg%3E");
+      background-size: 128px;
+    }
+    .shell {
+      position: relative; z-index: 1;
+      min-height: 100vh;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      max-width: 860px;
+      margin: 0 auto;
+      padding: 0 28px;
+    }
+    header {
+      padding: 40px 0 32px;
+      border-bottom: 1.5px solid var(--border);
+      display: flex;
+      align-items: flex-end;
+      gap: 16px;
+    }
+    .logo-block { display: flex; flex-direction: column; gap: 6px; }
+    .logo-tag {
+      font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase;
+      color: var(--accent); font-weight: 600;
+    }
+    h1 {
+      font-family: var(--serif); font-size: 30px; font-weight: 700;
+      letter-spacing: -0.01em; color: var(--text); line-height: 1.1;
+    }
+    h1 em { font-style: italic; color: var(--accent); }
+    .status-pill {
+      margin-left: auto;
+      display: flex; align-items: center; gap: 7px;
+      background: var(--accent-bg);
+      border: 1px solid #b2ddd0;
+      border-radius: 20px; padding: 5px 12px;
+      font-size: 11px; color: var(--accent); font-weight: 600;
+      letter-spacing: 0.04em; white-space: nowrap;
+    }
+    .status-dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2.4s ease-in-out infinite;
+    }
+    @keyframes pulse {
+      0%,100%{ opacity:1; box-shadow:0 0 0 0 rgba(10,124,89,.4); }
+      50%    { opacity:.7; box-shadow:0 0 0 4px rgba(10,124,89,0); }
+    }
+    main { padding: 36px 0; display: flex; flex-direction: column; gap: 28px; }
+    .label {
+      font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase;
+      color: var(--text-muted); margin-bottom: 10px;
+      display: flex; align-items: center; gap: 10px; font-weight: 600;
+    }
+    .label::after { content:''; flex:1; height:1px; background:var(--border); }
+    .card {
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: var(--radius); padding: 20px;
+      box-shadow: var(--shadow-sm);
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .card:focus-within {
+      border-color: var(--accent-dim);
+      box-shadow: 0 0 0 3px rgba(10,124,89,.08), var(--shadow-sm);
+    }
+    textarea {
+      width: 100%; background: transparent; border: none; outline: none;
+      color: var(--text); font-family: var(--mono); font-size: 14px;
+      line-height: 1.75; resize: vertical; min-height: 120px;
+    }
+    textarea::placeholder { color: var(--text-muted); }
+    .char-count {
+      text-align: right; font-size: 11px; color: var(--text-muted);
+      margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border);
+    }
+    .char-count.warn { color: var(--warn); }
+    .btn-synthesize {
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      width: 100%; padding: 15px;
+      background: var(--accent); color: #fff; border: none;
+      border-radius: var(--radius);
+      font-family: var(--mono); font-size: 13px; font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      cursor: pointer;
+      transition: background .15s, transform .1s, box-shadow .15s;
+      box-shadow: 0 2px 8px rgba(10,124,89,.25);
+    }
+    .btn-synthesize:hover { background:#086647; box-shadow:0 4px 14px rgba(10,124,89,.35); }
+    .btn-synthesize:active { transform: scale(.99); }
+    .btn-synthesize:disabled { background:var(--border); color:var(--text-muted); cursor:not-allowed; box-shadow:none; }
+    .spinner {
+      width:16px; height:16px;
+      border:2px solid rgba(255,255,255,.3); border-top-color:#fff;
+      border-radius:50%; animation:spin .7s linear infinite; display:none;
+    }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .btn-synthesize.loading .spinner { display:block; }
+    .btn-synthesize.loading .btn-text { display:none; }
+    .error-box {
+      background:var(--error-bg); border:1.5px solid rgba(192,57,43,.25);
+      border-radius:var(--radius); padding:14px 18px;
+      color:var(--error); font-size:13px; display:none;
+    }
+    .error-box.visible { display:block; animation:fadeUp .2s ease; }
+    @keyframes fadeUp {
+      from { opacity:0; transform:translateY(10px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+
+    /* ── Dual player grid ── */
+    .dual-players {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width:620px) { .dual-players { grid-template-columns:1fr; } }
+
+    .player-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+      animation: fadeUp .3s ease;
+    }
+    .player-card-header {
+      padding: 11px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 8px;
+    }
+    .player-card-header.ai   { background: var(--accent-bg); }
+    .player-card-header.orig { background: var(--indigo-bg); }
+    .player-badge {
+      font-size:10px; font-weight:700; letter-spacing:.15em;
+      text-transform:uppercase; padding:2px 8px; border-radius:20px;
+    }
+    .player-badge.ai   { background:var(--accent); color:#fff; }
+    .player-badge.orig { background:var(--indigo); color:#fff; }
+    .player-card-meta {
+      font-size:11px; color:var(--text-muted);
+      white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+    }
+    .player-card-body { padding:18px 16px 16px; }
+
+    /* ── Single-panel fallback ── */
+    .output-panel {
+      background:var(--surface); border:1.5px solid var(--border);
+      border-radius:var(--radius); overflow:hidden;
+      display:none; animation:fadeUp .3s ease; box-shadow:var(--shadow-md);
+    }
+    .output-panel.visible { display:block; }
+    .output-header {
+      padding:14px 20px; border-bottom:1px solid var(--border);
+      display:flex; align-items:center; justify-content:space-between;
+      background:var(--accent-bg);
+    }
+    .output-title { font-size:11px; letter-spacing:.16em; text-transform:uppercase; color:var(--accent); font-weight:600; }
+    .output-meta  { font-size:11px; color:var(--text-muted); }
+    .waveform-container { padding:24px 20px 20px; }
+
+    /* ── Shared player controls ── */
+    .player-wrap { display:flex; flex-direction:column; gap:14px; }
+    .progress-bar-track {
+      width:100%; height:4px;
+      background:var(--surface-2); border-radius:4px;
+      cursor:pointer; position:relative;
+      border:1px solid var(--border);
+    }
+    .progress-bar-fill {
+      height:100%; border-radius:4px; width:0%;
+      transition:width .1s linear; pointer-events:none;
+    }
+    .fill-ai   { background: var(--accent); }
+    .fill-orig { background: var(--indigo); }
+    .player-controls { display:flex; align-items:center; gap:16px; }
+    .btn-play {
+      width:44px; height:44px; border-radius:50%;
+      border:none; cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      transition:background .15s, transform .1s, box-shadow .15s;
+      flex-shrink:0;
+    }
+    .btn-play.ai   { background:var(--accent); box-shadow:0 2px 8px rgba(10,124,89,.3); }
+    .btn-play.ai:hover   { background:#086647; box-shadow:0 4px 12px rgba(10,124,89,.4); }
+    .btn-play.orig { background:var(--indigo); box-shadow:0 2px 8px rgba(79,70,229,.3); }
+    .btn-play.orig:hover { background:#3730a3; box-shadow:0 4px 12px rgba(79,70,229,.4); }
+    .btn-play:active { transform:scale(.93); }
+    .btn-play svg { fill:#fff; width:18px; height:18px; }
+    .time-display { font-size:12px; color:var(--text-dim); font-variant-numeric:tabular-nums; min-width:90px; }
+    .btn-download {
+      margin-left:auto; background:transparent;
+      border:1.5px solid var(--border); color:var(--text-dim);
+      border-radius:6px; padding:7px 14px;
+      font-family:var(--mono); font-size:11px; cursor:pointer;
+      letter-spacing:.08em; text-transform:uppercase;
+      transition:border-color .15s, color .15s, background .15s; font-weight:600;
+    }
+    .btn-download:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-bg); }
+
+    /* ── History ── */
+    .history-list { display:flex; flex-direction:column; gap:8px; }
+    .history-item {
+      display:flex; align-items:center; gap:12px;
+      padding:11px 16px; background:var(--surface);
+      border:1.5px solid var(--border); border-radius:var(--radius);
+      cursor:pointer; transition:border-color .15s, box-shadow .15s;
+      box-shadow:var(--shadow-sm);
+    }
+    .history-item:hover { border-color:var(--accent-dim); box-shadow:0 0 0 3px rgba(10,124,89,.07); }
+    .history-icon {
+      width:30px; height:30px; border-radius:50%;
+      background:var(--accent-bg); border:1px solid #b2ddd0;
+      display:flex; align-items:center; justify-content:center; flex-shrink:0;
+    }
+    .history-icon svg { fill:var(--accent); width:13px; }
+    .history-text { flex:1; font-size:12px; color:var(--text-dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .history-time { font-size:10px; color:var(--text-muted); }
+    .has-orig-dot { color:var(--indigo); margin-left:4px; }
+
+    footer {
+      padding:20px 0; border-top:1.5px solid var(--border);
+      display:flex; justify-content:space-between;
+      font-size:11px; color:var(--text-muted); letter-spacing:.06em;
+    }
+    #apiStatus { font-weight:600; }
+  </style>
+</head>
+<body>
+<div class="shell">
+
+  <header>
+    <div class="logo-block">
+      <span class="logo-tag">Vietnamese TTS · Demo</span>
+      <h1>Text-to-Speech <em>Studio</em></h1>
+    </div>
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      <span id="apiStatusPill">Online</span>
+    </div>
+  </header>
+
+  <main>
+
+    <section>
+      <div class="label">Văn bản đầu vào</div>
+      <div class="card">
+        <textarea id="inputText"
+          placeholder="Nhập văn bản (phoneme) cần tổng hợp giọng nói..."
+          maxlength="500" oninput="updateCharCount()"></textarea>
+        <div class="char-count" id="charCount">0 / 500</div>
+      </div>
+    </section>
+     <!-- Model Config -->
+    <section>
+      <div class="label">Cấu hình model</div>
+      <div class="card">
+        <div class="path-grid">
+          <div class="field">
+            <span class="field-label">Model Checkpoint (.pth)</span>
+            <input
+              type="text"
+              id="modelPath"
+              value="best_model/checkpoint_1220000.pth"
+            />
+          </div>
+          <div class="field">
+            <span class="field-label">Config JSON</span>
+            <input
+              type="text"
+              id="configPath"
+              value="best_model/config.json"
+            />
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <button class="btn-synthesize" id="btnSynth" onclick="synthesize()">
+      <div class="spinner"></div>
+      <span class="btn-text">▶ &nbsp; Synthesize</span>
+    </button>
+
+    <div class="error-box" id="errorBox"></div>
+
+    <!-- Output section -->
+    <section id="outputSection" style="display:none">
+      <div class="label">Kết quả</div>
+
+      <!-- DUAL: AI + Original side by side -->
+      <div class="dual-players" id="dualPlayers" style="display:none">
+
+        <div class="player-card">
+          <div class="player-card-header ai">
+            <span class="player-badge ai">AI Gen</span>
+            <span class="player-card-meta" id="aiMeta">—</span>
+          </div>
+          <div class="player-card-body">
+            <div class="player-wrap">
+              <div class="progress-bar-track" id="ptAI" onclick="seekAudio(event,'ai')">
+                <div class="progress-bar-fill fill-ai" id="pfAI"></div>
+              </div>
+              <div class="player-controls">
+                <button class="btn-play ai" id="bpAI" onclick="togglePlay('ai')">
+                  <svg id="iconAI" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+                <span class="time-display" id="tdAI">0:00 / 0:00</span>
+                <button class="btn-download" id="dlAI">↓ Download</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="player-card">
+          <div class="player-card-header orig">
+            <span class="player-badge orig">Gốc</span>
+            <span class="player-card-meta" id="origMeta">—</span>
+          </div>
+          <div class="player-card-body">
+            <div class="player-wrap">
+              <div class="progress-bar-track" id="ptOrig" onclick="seekAudio(event,'orig')">
+                <div class="progress-bar-fill fill-orig" id="pfOrig"></div>
+              </div>
+              <div class="player-controls">
+                <button class="btn-play orig" id="bpOrig" onclick="togglePlay('orig')">
+                  <svg id="iconOrig" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                </button>
+                <span class="time-display" id="tdOrig">0:00 / 0:00</span>
+                <button class="btn-download" id="dlOrig">↓ Download</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- SINGLE: AI only (no original found) -->
+      <div class="output-panel" id="outputPanel">
+        <div class="output-header">
+          <span class="output-title">Audio Output</span>
+          <span class="output-meta" id="outputMeta">—</span>
+        </div>
+        <div class="waveform-container">
+          <div class="player-wrap">
+            <div class="progress-bar-track" id="ptSingle" onclick="seekAudio(event,'single')">
+              <div class="progress-bar-fill fill-ai" id="pfSingle"></div>
+            </div>
+            <div class="player-controls">
+              <button class="btn-play ai" id="bpSingle" onclick="togglePlay('single')">
+                <svg id="iconSingle" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+              </button>
+              <span class="time-display" id="tdSingle">0:00 / 0:00</span>
+              <button class="btn-download" id="dlSingle">↓ Download</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="historySection" style="display:none">
+      <div class="label">Lịch sử</div>
+      <div class="history-list" id="historyList"></div>
+    </section>
+
+  </main>
+
+  <footer>
+    <span>TTS Web Demo</span>
+    <span id="apiStatus">API: checking...</span>
+  </footer>
+
+</div>
+
+<script>
+  const PLAY  = '<path d="M8 5v14l11-7z"/>';
+  const PAUSE = '<path d="M6 19h4V5H6zm8-14v14h4V5z"/>';
+
+  const audioAI   = new Audio();
+  const audioOrig = new Audio();
+
+  // Registry: mode -> DOM refs
+  const P = {
+    ai: {
+      audio:  audioAI,
+      fill:   () => document.getElementById('pfAI'),
+      time:   () => document.getElementById('tdAI'),
+      icon:   () => document.getElementById('iconAI'),
+      track:  () => document.getElementById('ptAI'),
+      dl:     () => document.getElementById('dlAI'),
+    },
+    orig: {
+      audio:  audioOrig,
+      fill:   () => document.getElementById('pfOrig'),
+      time:   () => document.getElementById('tdOrig'),
+      icon:   () => document.getElementById('iconOrig'),
+      track:  () => document.getElementById('ptOrig'),
+      dl:     () => document.getElementById('dlOrig'),
+    },
+    single: {
+      audio:  audioAI,
+      fill:   () => document.getElementById('pfSingle'),
+      time:   () => document.getElementById('tdSingle'),
+      icon:   () => document.getElementById('iconSingle'),
+      track:  () => document.getElementById('ptSingle'),
+      dl:     () => document.getElementById('dlSingle'),
+    },
+  };
+
+  // Bind time/ended events for each mode
+  Object.keys(P).forEach(mode => {
+    const p = P[mode];
+    p.audio.addEventListener('timeupdate', () => {
+      const pct = p.audio.duration ? (p.audio.currentTime / p.audio.duration) * 100 : 0;
+      p.fill().style.width = pct + '%';
+      p.time().textContent = `${fmt(p.audio.currentTime)} / ${fmt(p.audio.duration)}`;
+    });
+    p.audio.addEventListener('ended', () => { p.icon().innerHTML = PLAY; });
+  });
+
+  function fmt(s) {
+    if (!s || isNaN(s)) return '0:00';
+    return `${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,'0')}`;
+  }
+
+  function loadPlayer(mode, url, filename) {
+    const p = P[mode];
+    p.audio.src = url;
+    p.audio.load();
+    p.audio.oncanplaythrough = () => { p.audio.play(); p.icon().innerHTML = PAUSE; };
+    p.dl().onclick = () => { const a = document.createElement('a'); a.href=url; a.download=filename; a.click(); };
+  }
+
+  function togglePlay(mode) {
+    const p = P[mode];
+    if (p.audio.paused) { p.audio.play();  p.icon().innerHTML = PAUSE; }
+    else                { p.audio.pause(); p.icon().innerHTML = PLAY;  }
+  }
+
+  function seekAudio(e, mode) {
+    const p    = P[mode];
+    const rect = p.track().getBoundingClientRect();
+    const pct  = (e.clientX - rect.left) / rect.width;
+    if (p.audio.duration) p.audio.currentTime = pct * p.audio.duration;
+  }
+
+  // ── UI state ──
+  let history = [];
+  const outputSection  = document.getElementById('outputSection');
+  const dualPlayers    = document.getElementById('dualPlayers');
+  const outputPanel    = document.getElementById('outputPanel');
+  const errorBox       = document.getElementById('errorBox');
+  const btnSynth       = document.getElementById('btnSynth');
+  const historySection = document.getElementById('historySection');
+  const historyList    = document.getElementById('historyList');
+
+  function updateCharCount() {
+    const len = document.getElementById('inputText').value.length;
+    const el  = document.getElementById('charCount');
+    el.textContent = `${len} / 500`;
+    el.className = len > 450 ? 'char-count warn' : 'char-count';
+  }
+
+  async function checkHealth() {
+    try {
+      const r = await fetch('/health');
+      const ok = r.ok;
+      document.getElementById('apiStatus').textContent = ok ? 'API: online ✓' : 'API: offline ✗';
+      document.getElementById('apiStatusPill').textContent = ok ? 'Online' : 'Offline';
+    } catch {
+      document.getElementById('apiStatus').textContent = 'API: offline ✗';
+      document.getElementById('apiStatusPill').textContent = 'Offline';
+    }
+  }
+  checkHealth();
+
+  async function synthesize() {
+    const text = document.getElementById('inputText').value.trim();
+    if (!text) return showError('Vui lòng nhập văn bản đầu vào.');
+    hideError();
+    setLoading(true);
+    try {
+      const res  = await fetch('/synthesize', {
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ text }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.detail || `Lỗi server: ${res.status}`);
+
+      outputSection.style.display = 'block';
+
+      if (data.has_original) {
+        dualPlayers.style.display = 'grid';
+        outputPanel.classList.remove('visible');
+
+        loadPlayer('ai',   data.audio_url,          data.filename);
+        loadPlayer('orig', data.original_audio_url, data.original_filename);
+        document.getElementById('aiMeta').textContent   = data.filename;
+        document.getElementById('origMeta').textContent = data.original_filename;
+      } else {
+        dualPlayers.style.display = 'none';
+        outputPanel.classList.add('visible');
+
+        loadPlayer('single', data.audio_url, data.filename);
+        document.getElementById('outputMeta').textContent = data.filename;
+      }
+
+      addHistory(data);
+    } catch (err) {
+      showError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function showResult(item) {
+    outputSection.style.display = 'block';
+    if (item.has_original) {
+      dualPlayers.style.display = 'grid';
+      outputPanel.classList.remove('visible');
+      loadPlayer('ai',   item.audio_url,          item.filename);
+      loadPlayer('orig', item.original_audio_url, item.original_filename);
+      document.getElementById('aiMeta').textContent   = item.filename;
+      document.getElementById('origMeta').textContent = item.original_filename;
+    } else {
+      dualPlayers.style.display = 'none';
+      outputPanel.classList.add('visible');
+      loadPlayer('single', item.audio_url, item.filename);
+      document.getElementById('outputMeta').textContent = item.filename;
+    }
+  }
+
+  function addHistory(data) {
+    const now = new Date().toLocaleTimeString('vi-VN', {hour:'2-digit',minute:'2-digit'});
+    history.unshift({ ...data, time: now });
+    historySection.style.display = history.length > 1 ? 'block' : 'none';
+    renderHistory();
+  }
+
+  function renderHistory() {
+    historyList.innerHTML = '';
+    history.slice(1).forEach(item => {
+      const div = document.createElement('div');
+      div.className = 'history-item';
+      div.onclick = () => showResult(item);
+      div.innerHTML = `
+        <div class="history-icon">
+          <svg viewBox="0 0 24 24"><path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/></svg>
+        </div>
+        <div class="history-text">${esc(item.text)}</div>
+        <div class="history-time">${item.time}${item.has_original ? '<span class="has-orig-dot">●</span>' : ''}</div>
+      `;
+      historyList.appendChild(div);
+    });
+  }
+
+  function setLoading(on) { btnSynth.disabled=on; btnSynth.classList.toggle('loading',on); }
+  function showError(msg) { errorBox.textContent=msg; errorBox.classList.add('visible'); }
+  function hideError()    { errorBox.classList.remove('visible'); }
+  function esc(s)         { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+  document.addEventListener('keydown', e => {
+    if ((e.ctrlKey||e.metaKey) && e.key==='Enter') synthesize();
+  });
+</script>
+</body>
+</html>

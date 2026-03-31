@@ -1,0 +1,31 @@
+# virtual env
+venv/
+
+# audio
+*.wav
+wavs/
+
+# dataset
+dataset/
+cuoi_cham_tts_dataset*
+
+# model
+*.pt
+*.pth
+*.ckpt
+best_model/
+
+# training output
+training_output/
+
+# analysis
+analysis_results/
+
+cuoi_cham_tts_dataset_for_debug/
+
+# cache
+__pycache__/
+
+# system
+.DS_Store
+*.log
