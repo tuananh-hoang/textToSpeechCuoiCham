@@ -9,8 +9,7 @@
 | **Tên project** | TTS Tiếng Cuối Chăm |
 | **Mô tả nghiệp vụ** | Xây dựng hệ thống chuyển văn bản thành giọng nói (Text-to-Speech) cho ngôn ngữ thiểu số Cuối Chăm, dựa trên fine-tune mô hình VITS từ pretrained LJSpeech |
 | **Use Case** | Tổng hợp giọng nói từ chuỗi âm vị (phoneme sequence) của tiếng Cuối Chăm|
-| **Người phụ trách** | Hoàng Tuấn Anh |
-| **Server làm việc** | `/home/anhht/textToSpeechCuoiCham/` |
+
 
 ---
 
@@ -265,12 +264,6 @@ Trong `config.json`:
 "characters_class": "TTS.tts.utils.text.characters.CuoiChamPhonemesWithLabeling"
 ```
 
-
-## 11. QUICK START (1 phút)
-
-```bash
-cd /home/anhht/textToSpeechCuoiCham
-source venv/bin/activate
 
 
 
