@@ -1,4 +1,4 @@
-# TÀI LIỆU BÀN GIAO DỰ ÁN AI – TTS TIẾNG CUỐI CHĂM
+
 
 ---
 
@@ -265,20 +265,8 @@ Trong `config.json`:
 "characters_class": "TTS.tts.utils.text.characters.CuoiChamPhonemesWithLabeling"
 ```
 
----
 
-## 11. CHECKLIST BÀN GIAO
-
-
-- [x] Dataset: `dataset/` đủ `wavs/` + `metadata_train.csv` + `metadata_dev.csv`  + `metadata_test.csv`
-- [x] Training code: `config.json` + `src/` + `requirements.txt`
-- [x] Model checkpoint: `training_output/<run>/best_model_*.pth` + `training_output/<run>/config.json`
-- [x] Lớp tùy chỉnh `CuoiChamPhonemesWithLabeling` được cài vào môi trường Coqui TTS
-- [x] Pretrained gốc còn tại `/home/anhht/.local/share/tts/tts_models--en--ljspeech--vits/model_file.pth`
-
----
-
-## 12. QUICK START (1 phút)
+## 11. QUICK START (1 phút)
 
 ```bash
 cd /home/anhht/textToSpeechCuoiCham
